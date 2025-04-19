@@ -1,9 +1,5 @@
-import os
 import argparse
-from pyhanko.sign import signers, fields
-from pyhanko.sign.validation import validate_pdf_signature_field
-from cryptography.x509 import load_pem_x509_certificate
-from pyhanko.sign.certvalidation import validate_signature
+from pyhanko.sign.validation import validate_signatures
 from pyhanko.sign.signers import SimpleSigner
 from pyhanko.sign.fields import SigFieldSpec
 from pyhanko.sign.validation import ValidationError
@@ -13,10 +9,9 @@ def verify_pdf_signature(pdf_path):
     Verifica la firma digital en un archivo PDF, incluyendo la validez del certificado y la cadena de confianza.
     :param pdf_path: Ruta al archivo PDF.
     """
-    # Intentamos validar la firma del PDF usando PyHanko
     try:
-        # Realizar la validación de la firma en el archivo PDF
-        validation_result = validate_pdf_signature_field(pdf_path)
+        # Validación de las firmas en el archivo PDF
+        validation_result = validate_signatures(pdf_path)
 
         # Si la validación pasa, mostramos detalles de la firma
         if validation_result.is_valid:
@@ -50,8 +45,6 @@ def extract_signed_content(pdf_path):
     :param pdf_path: Ruta al archivo PDF.
     :return: Contenido firmado como bytes (puede ser el contenido que fue firmado).
     """
-    # Aquí utilizaríamos PyHanko para extraer el contenido firmado.
-    # Este contenido es esencial para realizar una verificación adecuada de la firma.
     try:
         with open(pdf_path, "rb") as f:
             # Extraemos las firmas del archivo PDF
