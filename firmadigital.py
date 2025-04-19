@@ -1,4 +1,5 @@
 import os
+import argparse
 from pyhanko.sign import signers, fields
 from pyhanko.sign.validation import validate_pdf_signature_field
 from cryptography.x509 import load_pem_x509_certificate
@@ -61,10 +62,7 @@ def extract_signed_content(pdf_path):
         return None
 
 
-def main():
-    # Ruta al archivo PDF a verificar
-    pdf_path = "ruta/al/archivo.pdf"
-
+def main(pdf_path):
     # Verificar la firma digital del archivo PDF
     is_valid = verify_pdf_signature(pdf_path)
 
@@ -78,5 +76,12 @@ def main():
     else:
         print("La firma digital no es válida.")
 
+
 if __name__ == "__main__":
-    main()
+    # Configuración de argparse para aceptar parámetros desde la línea de comandos
+    parser = argparse.ArgumentParser(description="Verificar la firma digital de un archivo PDF.")
+    parser.add_argument("pdf_path", help="Ruta al archivo PDF que contiene la firma digital.")
+    args = parser.parse_args()
+    
+    # Llamada a la función principal con el parámetro pasado por consola
+    main(args.pdf_path)
