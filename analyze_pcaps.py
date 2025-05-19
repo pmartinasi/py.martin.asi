@@ -1,7 +1,7 @@
 import os
 from scapy.all import rdpcap, IP, TCP, UDP, ICMP
 from collections import defaultdict, Counter
-from multiprocessing import Pool, cpu_count
+from multiprocessing import Pool
 
 # Parámetros para detección de anomalías
 CONNECTION_THRESHOLD = 100
@@ -118,12 +118,13 @@ def analyze_directory_parallel(directory):
         print("No se encontraron archivos .pcap en el directorio.")
         return
 
-    print(f"[i] Analizando {len(pcap_files)} archivos usando {cpu_count()} núcleos...")
+    print(f"[i] Analizando {len(pcap_files)} archivos usando 4 procesos...")
 
     # Empaquetar argumentos
     tasks = [(file_path, output_dir) for file_path in pcap_files]
 
-    with Pool(processes=cpu_count()) as pool:
+    # Limitar a 4 procesos simultáneos
+    with Pool(processes=4) as pool:
         pool.map(analyze_pcap, tasks)
 
 
