@@ -1,10 +1,12 @@
 import os
 from scapy.all import rdpcap, IP, TCP, UDP, ICMP
 from collections import defaultdict, Counter
+from multiprocessing import Pool, cpu_count
 
 # Parámetros para detección de anomalías
 CONNECTION_THRESHOLD = 100
 SUSPICIOUS_PORTS = {6667, 31337, 12345}
+
 
 def format_bytes(size_bytes):
     """Convierte bytes a una cadena legible en MB o GB."""
@@ -15,9 +17,11 @@ def format_bytes(size_bytes):
     else:
         return f"{size_bytes / (1024**3):.2f} GB"
 
-def analyze_pcap(file_path, output_dir):
+
+def analyze_pcap(args):
+    file_path, output_dir = args
     report_lines = []
-    print(f"\nAnalizando: {file_path}")
+    print(f"[+] Analizando: {file_path}")
     ip_counter = defaultdict(int)
     port_counter = defaultdict(int)
     protocol_counter = Counter()
@@ -31,7 +35,7 @@ def analyze_pcap(file_path, output_dir):
     try:
         packets = rdpcap(file_path)
     except Exception as e:
-        print(f"Error leyendo {file_path}: {e}")
+        print(f"[!] Error leyendo {file_path}: {e}")
         return
 
     for pkt in packets:
@@ -62,7 +66,6 @@ def analyze_pcap(file_path, output_dir):
         else:
             protocol_counter["Otros"] += 1
 
-    # Anomalías
     for ip, count in ip_connection_counter.items():
         if count > CONNECTION_THRESHOLD:
             anomalies.append(f"  - IP sospechosa: {ip} con {count} conexiones")
@@ -71,7 +74,6 @@ def analyze_pcap(file_path, output_dir):
         if port in SUSPICIOUS_PORTS:
             anomalies.append(f"  - Puerto sospechoso usado: {port}")
 
-    # --- Generar reporte ---
     report_lines.append(f"REPORTE PARA: {os.path.basename(file_path)}\n")
     report_lines.append(f"Total de paquetes: {total_packets}")
     report_lines.append(f"Tráfico total: {format_bytes(total_bytes)}")
@@ -94,7 +96,6 @@ def analyze_pcap(file_path, output_dir):
     else:
         report_lines.append("\nNo se encontraron anomalías.")
 
-    # Guardar reporte en archivo
     os.makedirs(output_dir, exist_ok=True)
     report_filename = os.path.basename(file_path) + "_report.txt"
     report_path = os.path.join(output_dir, report_filename)
@@ -104,17 +105,27 @@ def analyze_pcap(file_path, output_dir):
 
     print(f"  >> Reporte generado en: {report_path}")
 
-def analyze_directory(directory):
+
+def analyze_directory_parallel(directory):
     output_dir = os.path.join(directory, "reportes")
-    pcap_files = [f for f in os.listdir(directory) if f.endswith(".pcap")]
+    pcap_files = [
+        os.path.join(directory, f)
+        for f in os.listdir(directory)
+        if f.endswith(".pcap")
+    ]
 
     if not pcap_files:
         print("No se encontraron archivos .pcap en el directorio.")
         return
 
-    for filename in pcap_files:
-        file_path = os.path.join(directory, filename)
-        analyze_pcap(file_path, output_dir)
+    print(f"[i] Analizando {len(pcap_files)} archivos usando {cpu_count()} núcleos...")
+
+    # Empaquetar argumentos
+    tasks = [(file_path, output_dir) for file_path in pcap_files]
+
+    with Pool(processes=cpu_count()) as pool:
+        pool.map(analyze_pcap, tasks)
+
 
 if __name__ == "__main__":
     directory = input("Introduce la ruta del directorio que contiene archivos .pcap: ").strip()
@@ -122,4 +133,4 @@ if __name__ == "__main__":
     if not os.path.isdir(directory):
         print("❌ La ruta proporcionada no es un directorio válido.")
     else:
-        analyze_directory(directory)
+        analyze_directory_parallel(directory)
