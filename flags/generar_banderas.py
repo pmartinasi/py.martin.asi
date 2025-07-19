@@ -52,7 +52,7 @@ def draw_svg_flag(stripes, orientation, filename):
     dwg.save()
 
 def generate_flags():
-    for num_stripes in [1, 2, 3, 4, 5, 6]:
+    for num_stripes in [1, 2, 3, 4, 5, 6, 7, 8, 9]:
         for combo in itertools.product(colors.keys(), repeat=num_stripes):
             if all(combo[i] != combo[i + 1] for i in range(len(combo) - 1)):  # evitar repetidos adyacentes
                 name = f"{'-'.join(combo)}_{num_stripes}stripes"
